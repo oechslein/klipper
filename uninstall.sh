@@ -1,4 +1,4 @@
-/bin/sh
+#!/bin/sh
 
 # Stop Klipper Service
 echo "###Stopping Klipper Service.."

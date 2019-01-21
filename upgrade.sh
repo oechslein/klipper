@@ -1,4 +1,4 @@
-/bin/sh
+#!/bin/sh
 
 git pull
 ./scripts/install-octopi.sh
