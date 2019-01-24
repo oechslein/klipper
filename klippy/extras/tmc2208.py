@@ -236,7 +236,7 @@ class TMC2208:
                 val = self.get_register(reg_name)
             except self.printer.config_error as e:
                 raise gcode.error(str(e))
-            msg = "%-15s %08x" % (reg_name + ":", val)
+            msg = "%-15s 0x%08x" % (reg_name + ":", val)
             ###### CO: CHANGE FROM https://github.com/lorf/klipper/commits/tmc2208-decode ######
             if reg_name == 'GSTAT':
                 msg += ("\n- drv_err (error shutdown): %d\n"
@@ -323,6 +323,53 @@ class TMC2208:
                         + "- PWM_GRAD_AUTO:            %d") % (
                         val & 0xff,
                         (val >> 16) & 0xff)
+            elif reg_name == 'PWMCONF':
+                msg += ("\n- PWM_OFS (User defined amplitude (offset)):                  %d\n"
+                        + "- PWM_GRAD (User defined amplitude gradient):                 %d\n"
+                        + "- freq0/1 (PWM frequency selection):                          fPWM=2/%d fCLK\n"
+                        + "- pwm_autoscale (PWM automatic amplitude scaling):           %s\n"
+                        + "- pwm_autograd (PWM automatic gradient adaptation):          %s\n"
+                        + "- freewheel0/1 (interpolation to 256 microsteps):             %s\n"
+                        + "- PWM_REG (Regulation loop gradient):                         %d increment(s)\n"
+                        + "- PWM_LIM (PWM aut. scale amplitude limit when switching on): %d\n"
+                       ) % (
+                            ((val >> 0) & 0xff),
+                            ((val >> 8) & 0xff),
+                            (1024, 683, 512, 410)[((val >> 16) & 0b11)],
+                            ("User defined feed forward PWM amplitude.",
+                            "Enable automatic current control")[((val >> 18) & 0b1)],
+                            ("Fixed value for PWM_GRAD (PWM_GRAD_AUTO = PWM_GRAD)",
+                            "Automatic tuning (only with enabled pwm_autoscale)")[((val >> 19) & 0b1)],
+                            ("Normal operation", "Freewheeling",
+                            "Coil shorted using LS drivers",
+                            "Coil shorted using HS drivers")[((val >> 20) & 0b11)],
+                            0.5*((val >> 24) & 0b11),
+                            ((val >> 31) & 0b1111),
+                           )
+            elif reg_name == 'CHOPCONF':
+                msg += ("\n- TOFF (off time and driver enable):                     %d\n"
+                        + "- HSTRT (hysteresis start value added to HEND):          %d\n"
+                        + "- HEND (hysteresis low value OFFSET sine wave offset):   %d\n"
+                        + "- TBL (blank time select):                               %d\n"
+                        + "- vsense (sense resistor voltage based current scaling): %s\n"
+                        + "- MRES (micro step resolution):                          %s\n"
+                        + "- intpol (interpolation to 256 microsteps):              %d\n"
+                        + "- dedge (enable double edge step pulses):                %d\n"
+                        + "- diss2g (short to GND protection disable):              %d\n"
+                        + "- diss2vs (Low side short protection disable):           %d\n"
+                       ) % (
+                            ((val >> 0) & 0b1111),
+                            ((val >> 4) & 0b111),
+                            ((val >> 7) & 0b111),
+                            (16, 24, 32, 40)[((val >> 15) & 0b11)],
+                            ("Low sensitivity, high sense resistor voltage",
+                             "High sensitivity, low sense resistor voltage")[((val >> 17) & 0b1)],
+                            (256, 128, 64, 32, 16, 8, 4, 2, "FULLSTEP")[((val >> 24) & 0b1111)],
+                            (val >> 28) & 0b1,
+                            (val >> 29) & 0b1,
+                            (val >> 30) & 0b1,
+                            (val >> 31) & 0b1,
+                       )
             ###### CO: CHANGE FROM https://github.com/lorf/klipper/commits/tmc2208-decode ######
             logging.info(msg)
             gcode.respond_info(msg)
