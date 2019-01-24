@@ -324,55 +324,83 @@ class TMC2208:
                         val & 0xff,
                         (val >> 16) & 0xff)
             elif reg_name == 'PWMCONF':
-                msg += ("\n- PWM_OFS (User defined amplitude (offset)):                  %d\n"
-                        + "- PWM_GRAD (User defined amplitude gradient):                 %d\n"
-                        + "- freq0/1 (PWM frequency selection):                          fPWM=2/%d fCLK\n"
-                        + "- pwm_autoscale (PWM automatic amplitude scaling):           %s\n"
-                        + "- pwm_autograd (PWM automatic gradient adaptation):          %s\n"
-                        + "- freewheel0/1 (interpolation to 256 microsteps):             %s\n"
-                        + "- PWM_REG (Regulation loop gradient):                         %d increment(s)\n"
-                        + "- PWM_LIM (PWM aut. scale amplitude limit when switching on): %d\n"
+                msg += ("\n- PWM_OFS (User def. ampl.):                %d\n"
+                        + "- PWM_GRAD (User def. ampl. grad.):         %d\n"
+                        + "- freq0/1 (PWM frequency selection):        2/%d fCLK\n"
+                        + "- pwm_autoscale (PWM aut. ampl. scaling):   %s\n"
+                        + "- pwm_autograd (PWM aut. gradient adapt.):  %s\n"
+                        + "- freewheel0/1:                             %s\n"
+                        + "- PWM_REG (Regulation loop gradient):       %d incr.\n"
+                        + "- PWM_LIM (PWM aut. scale amplitude lim):   %d\n"
                        ) % (
                             ((val >> 0) & 0xff),
                             ((val >> 8) & 0xff),
                             (1024, 683, 512, 410)[((val >> 16) & 0b11)],
-                            ("User defined feed forward PWM amplitude.",
-                            "Enable automatic current control")[((val >> 18) & 0b1)],
-                            ("Fixed value for PWM_GRAD (PWM_GRAD_AUTO = PWM_GRAD)",
-                            "Automatic tuning (only with enabled pwm_autoscale)")[((val >> 19) & 0b1)],
-                            ("Normal operation", "Freewheeling",
-                            "Coil shorted using LS drivers",
-                            "Coil shorted using HS drivers")[((val >> 20) & 0b11)],
+                            ("User defined", "Automatic")[((val >> 18) & 0b1)],
+                            ("Fixed", "Automatic")[((val >> 19) & 0b1)],
+                            ("Normal", "Freewheeling",
+                             "Use LS drivers", "Use HS drivers")[((val >> 20) & 0b11)],
                             0.5*((val >> 24) & 0b11),
                             ((val >> 31) & 0b1111),
                            )
             elif reg_name == 'CHOPCONF':
-                msg += ("\n- TOFF (off time and driver enable):                     %d\n"
-                        + "- HSTRT (hysteresis start value added to HEND):          %d\n"
-                        + "- HEND (hysteresis low value OFFSET sine wave offset):   %d\n"
-                        + "- TBL (blank time select):                               %d\n"
-                        + "- vsense (sense resistor voltage based current scaling): %s\n"
-                        + "- MRES (micro step resolution):                          %s\n"
-                        + "- intpol (interpolation to 256 microsteps):              %d\n"
-                        + "- dedge (enable double edge step pulses):                %d\n"
-                        + "- diss2g (short to GND protection disable):              %d\n"
-                        + "- diss2vs (Low side short protection disable):           %d\n"
+                msg += ("\n- TOFF (off time and driver enable):        %d\n"
+                        + "- HSTRT (hysteresis start value):           %d\n"
+                        + "- HEND (hysteresis end value):              %d\n"
+                        + "- TBL (blank time select):                  %d\n"
+                        + "- vsense (sense resistor voltage):          %s\n"
+                        + "- MRES (micro step resolution):             %s\n"
+                        + "- intpol (interpolation to 256 microsteps): %d\n"
+                        + "- dedge (enable double edge step pulses):   %d\n"
+                        + "- diss2g (short to GND protection disable): %d\n"
+                        + "- diss2vs (Low side short protection dis.): %d\n"
                        ) % (
                             ((val >> 0) & 0b1111),
                             ((val >> 4) & 0b111),
                             ((val >> 7) & 0b111),
                             (16, 24, 32, 40)[((val >> 15) & 0b11)],
-                            ("Low sensitivity, high sense resistor voltage",
-                             "High sensitivity, low sense resistor voltage")[((val >> 17) & 0b1)],
-                            (256, 128, 64, 32, 16, 8, 4, 2, "FULLSTEP")[((val >> 24) & 0b1111)],
+                            ("High", "Low")[((val >> 17) & 0b1)],
+                            (256, 128, 64, 32, 16, 8, 4, 2, "FULL")[((val >> 24) & 0b1111)],
                             (val >> 28) & 0b1,
                             (val >> 29) & 0b1,
                             (val >> 30) & 0b1,
                             (val >> 31) & 0b1,
                        )
+            elif reg_name == 'MSCURACT':
+                msg += ("\n- CUR_A (Actual microstep current phase A): %d\n"
+                        + "- CUR_B (Actual microstep current phase B): %d\n"
+                       ) % (
+                            ((val >> 0) & 0xff),
+                            ((val >> 16) & 0xff),
+                           )
+            elif reg_name == 'GCONF':
+                msg += ("\n- I_scale_analog:   %d\n"
+                        + "- internal_Rsense:  %d\n"
+                        + "- en_spreadCycle:   %d\n"
+                        + "- shaft:            %d\n"
+                        + "- index_otpw:       %d\n"
+                        + "- index_step:       %d\n"
+                        + "- pdn_disable:      %d\n"
+                        + "- mstep_reg_select: %d\n"
+                        + "- multistep_filt:   %d\n"
+                        + "- test_mode:        %d\n"
+                       ) % (
+                            ((val >> 0) & 0b1),
+                            ((val >> 1) & 0b1),
+                            ((val >> 2) & 0b1),
+                            ((val >> 3) & 0b1),
+                            ((val >> 4) & 0b1),
+                            ((val >> 5) & 0b1),
+                            ((val >> 6) & 0b1),
+                            ((val >> 7) & 0b1),
+                            ((val >> 8) & 0b1),
+                            ((val >> 9) & 0b1),
+                      )
             ###### CO: CHANGE FROM https://github.com/lorf/klipper/commits/tmc2208-decode ######
             logging.info(msg)
             gcode.respond_info(msg)
 
 def load_config_prefix(config):
     return TMC2208(config)
+
+
