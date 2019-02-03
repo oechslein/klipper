@@ -24,6 +24,52 @@ ReadRegisters = [
     "CHOPCONF", "DRV_STATUS", "PWM_SCALE", "LOST_STEPS",
 ]
 
+Fields = {}
+
+
+######################################################################
+# Field helpers
+######################################################################
+
+# Return the position of the first bit set in a mask
+def ffs(mask):
+    return (mask & -mask).bit_length() - 1
+
+# Decode two's complement signed integer
+def decode_signed_int(val, bits):
+    if ((val >> (bits - 1)) & 1):
+        return val - (1 << bits)
+    return val
+
+class FieldHelper:
+    def __init__(self, all_fields, field_formatters={}):
+        self.all_fields = all_fields
+        self.field_formatters = field_formatters
+    def get_field(self, reg_name, field_name, reg_value):
+        # Returns value of the register field
+        mask = self.all_fields.get(reg_name, {})[field_name]
+        return (reg_value & mask) >> ffs(mask)
+    def set_field(self, reg_name, field_name, reg_value, field_value):
+        # Returns register value with field bits filled with supplied value
+        mask = self.all_fields.get(reg_name, {})[field_name]
+        return (reg_value & ~mask) | ((field_value << ffs(mask)) & mask)
+    def pretty_format(self, reg_name, value):
+        # Provide a string description of a register
+        reg_fields = self.all_fields.get(reg_name, {})
+        reg_fields = sorted([(mask, name) for name, mask in reg_fields.items()])
+        fields = []
+        for mask, field_name in reg_fields:
+            fval = (value & mask) >> ffs(mask)
+            sval = self.field_formatters.get(field_name, str)(fval)
+            if sval and sval != "0":
+                fields.append(" %s=%s" % (field_name, sval))
+        return "%-11s %08x%s" % (reg_name + ":", value, "".join(fields))
+
+
+######################################################################
+# TMC2130 printer object
+######################################################################
+
 class TMC2130:
     def __init__(self, config):
         self.printer = config.get_printer()
@@ -39,6 +85,7 @@ class TMC2130:
             "DUMP_TMC", "STEPPER", self.name,
             self.cmd_DUMP_TMC, desc=self.cmd_DUMP_TMC_help)
         # Get config for initial driver settings
+        self.field_helper = FieldHelper(Fields)
         run_current = config.getfloat('run_current', above=0., maxval=2.)
         hold_current = config.getfloat('hold_current', run_current,
                                        above=0., maxval=2.)
@@ -126,7 +173,7 @@ class TMC2130:
         logging.info("DUMP_TMC %s", self.name)
         for reg_name in ReadRegisters:
             val = self.get_register(reg_name)
-            msg = "%-15s %08x" % (reg_name + ":", val)
+            msg = self.field_helper.pretty_format(reg_name, val)
             logging.info(msg)
             gcode.respond_info(msg)
 
