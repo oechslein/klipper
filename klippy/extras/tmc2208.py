@@ -4,6 +4,7 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import math, logging, collections
+import tmc2130
 
 TMC_FREQUENCY=12000000.
 GCONF_PDN_DISABLE = 1<<6
@@ -23,6 +24,173 @@ ReadRegisters = [
     "MSCNT", "MSCURACT", "CHOPCONF", "DRV_STATUS",
     "PWMCONF", "PWM_SCALE", "PWM_AUTO"
 ]
+
+Fields = {}
+
+Fields["GCONF"] = {
+    "I_scale_analog":      0x01,
+    "internal_Rsense":     0x01 << 1,
+    "en_spreadCycle":      0x01 << 2,
+    "shaft":               0x01 << 3,
+    "index_otpw":          0x01 << 4,
+    "index_step":          0x01 << 5,
+    "pdn_disable":         0x01 << 6,
+    "mstep_reg_select":    0x01 << 7,
+    "multistep_filt":      0x01 << 8,
+    "test_mode":           0x01 << 9
+}
+Fields["GSTAT"] = {
+    "reset":               0x01,
+    "drv_err":             0x01 << 1,
+    "uv_cp":               0x01 << 2
+}
+Fields["IFCNT"] = {
+    "IFCNT":               0xff
+}
+Fields["SLAVECONF"] = {
+    "SENDDELAY":           0x0f << 8
+}
+Fields["OTP_PROG"] = {
+    "OTPBIT":              0x07,
+    "OTPBYTE":             0x03 << 4,
+    "OTPMAGIC":            0xff << 8
+}
+Fields["OTP_READ"] = {
+    "OTP_FCLKTRIM":        0x1f,
+    "otp_OTTRIM":          0x01 << 5,
+    "otp_internalRsense":  0x01 << 6,
+    "otp_TBL":             0x01 << 7,
+    "OTP_PWM_GRAD":        0x0f << 8,
+    "otp_pwm_autograd":    0x01 << 12,
+    "OTP_TPWMTHRS":        0x07 << 13,
+    "otp_PWM_OFS":         0x01 << 16,
+    "otp_PWM_REG":         0x01 << 17,
+    "otp_PWM_FREQ":        0x01 << 18,
+    "OTP_IHOLDDELAY":      0x03 << 19,
+    "OTP_IHOLD":           0x03 << 21,
+    "otp_en_spreadCycle":  0x01 << 23
+}
+# IOIN mapping depends on the driver type (SEL_A field)
+# TMC222x (SEL_A == 0)
+Fields["IOIN@TMC222x"] = {
+    "PDN_UART":            0x01 << 1,
+    "SPREAD":              0x01 << 2,
+    "DIR":                 0x01 << 3,
+    "ENN":                 0x01 << 4,
+    "STEP":                0x01 << 5,
+    "MS1":                 0x01 << 6,
+    "MS2":                 0x01 << 7,
+    "SEL_A":               0x01 << 8,
+    "VERSION":             0xff << 24
+}
+# TMC220x (SEL_A == 1)
+Fields["IOIN@TMC220x"] = {
+    "ENN":                 0x01,
+    "MS1":                 0x01 << 2,
+    "MS2":                 0x01 << 3,
+    "DIAG":                0x01 << 4,
+    "PDN_UART":            0x01 << 6,
+    "STEP":                0x01 << 7,
+    "SEL_A":               0x01 << 8,
+    "DIR":                 0x01 << 9,
+    "VERSION":             0xff << 24,
+}
+Fields["FACTORY_CONF"] = {
+    "FCLKTRIM":            0x1f,
+    "OTTRIM":              0x03 << 8
+}
+Fields["IHOLD_IRUN"] = {
+    "IHOLD":               0x1f,
+    "IRUN":                0x1f << 8,
+    "IHOLDDELAY":          0x0f << 16
+}
+Fields["TPOWERDOWN"] = {
+    "TPOWERDOWN":          0xff
+}
+Fields["TSTEP"] = {
+    "TSTEP":               0xfffff
+}
+Fields["TPWMTHRS"] = {
+    "TPWMTHRS":            0xfffff
+}
+Fields["VACTUAL"] = {
+    "VACTUAL":             0xffffff
+}
+Fields["MSCNT"] = {
+    "MSCNT":               0x3ff
+}
+Fields["MSCURACT"] = {
+    "CUR_A":               0x1ff,
+    "CUR_B":               0x1ff << 16
+}
+Fields["CHOPCONF"] = {
+    "toff":                0x0f,
+    "hstrt":               0x07 << 4,
+    "hend":                0x0f << 7,
+    "TBL":                 0x03 << 15,
+    "vsense":              0x01 << 17,
+    "MRES":                0x0f << 24,
+    "intpol":              0x01 << 28,
+    "dedge":               0x01 << 29,
+    "diss2g":              0x01 << 30,
+    "diss2vs":             0x01 << 31
+}
+Fields["DRV_STATUS"] = {
+    "otpw":                0x01,
+    "ot":                  0x01 << 1,
+    "s2ga":                0x01 << 2,
+    "s2gb":                0x01 << 3,
+    "s2vsa":               0x01 << 4,
+    "s2vsb":               0x01 << 5,
+    "ola":                 0x01 << 6,
+    "olb":                 0x01 << 7,
+    "t120":                0x01 << 8,
+    "t143":                0x01 << 9,
+    "t150":                0x01 << 10,
+    "t157":                0x01 << 11,
+    "CS_ACTUAL":           0x1f << 16,
+    "stealth":             0x01 << 30,
+    "stst":                0x01 << 31
+}
+Fields["PWMCONF"] = {
+    "PWM_OFS":             0xff,
+    "PWM_GRAD":            0xff << 8,
+    "pwm_freq":            0x03 << 16,
+    "pwm_autoscale":       0x01 << 18,
+    "pwm_autograd":        0x01 << 19,
+    "freewheel":           0x03 << 20,
+    "PWM_REG":             0xf << 24,
+    "PWM_LIM":             0xf << 28
+}
+Fields["PWM_SCALE"] = {
+    "PWM_SCALE_SUM":       0xff,
+    "PWM_SCALE_AUTO":      0x1ff << 16
+}
+Fields["PWM_AUTO"] = {
+    "PWM_OFS_AUTO":        0xff,
+    "PWM_GRAD_AUTO":       0xff << 16
+}
+
+FieldFormatters = {
+    "I_scale_analog":   (lambda v: "1(ExtVREF)" if v else ""),
+    "shaft":            (lambda v: "1(Reverse)" if v else ""),
+    "drv_err":          (lambda v: "1(ErrorShutdown!)" if v else ""),
+    "uv_cp":            (lambda v: "1(Undervoltage!)" if v else ""),
+    "SEL_A":            (lambda v: "%d(%s)" % (v, ["TMC222x", "TMC220x"][v])),
+    "VERSION":          (lambda v: "%#x" % v),
+    "CUR_A":            (lambda v: str(tmc2130.decode_signed_int(v, 9))),
+    "CUR_B":            (lambda v: str(tmc2130.decode_signed_int(v, 9))),
+    "MRES":             (lambda v: "%d(%dusteps)" % (v, 0x100 >> v)),
+    "otpw":             (lambda v: "1(OvertempWarning!)" if v else ""),
+    "ot":               (lambda v: "1(OvertempError!)" if v else ""),
+    "s2ga":             (lambda v: "1(ShortToGND_A!)" if v else ""),
+    "s2gb":             (lambda v: "1(ShortToGND_B!)" if v else ""),
+    "s2vsa":            (lambda v: "1(LowSideShort_A!)" if v else ""),
+    "s2vsb":            (lambda v: "1(LowSideShort_B!)" if v else ""),
+    "ola":              (lambda v: "1(OpenLoad_A!)" if v else ""),
+    "olb":              (lambda v: "1(OpenLoad_B!)" if v else ""),
+    "PWM_SCALE_AUTO":   (lambda v: str(tmc2130.decode_signed_int(v, 9)))
+}
 
 
 ######################################################################
@@ -121,6 +289,7 @@ class TMC2208:
             "DUMP_TMC", "STEPPER", self.name,
             self.cmd_DUMP_TMC, desc=self.cmd_DUMP_TMC_help)
         # Get config for initial driver settings
+        self.field_helper = tmc2130.FieldHelper(Fields, FieldFormatters)
         run_current = config.getfloat('run_current', above=0., maxval=2.)
         hold_current = config.getfloat('hold_current', run_current,
                                        above=0., maxval=2.)
@@ -199,6 +368,8 @@ class TMC2208:
     def get_register(self, reg_name):
         reg = Registers[reg_name]
         msg = encode_tmc2208_read(0xf5, 0x00, reg)
+        if self.printer.get_start_args().get('debugoutput') is not None:
+            return 0
         for retry in range(5):
             params = self.tmcuart_send_cmd.send_with_response(
                 [self.oid, msg, 10], 'tmcuart_response', self.oid)
@@ -236,171 +407,15 @@ class TMC2208:
                 val = self.get_register(reg_name)
             except self.printer.config_error as e:
                 raise gcode.error(str(e))
-            msg = "%-15s 0x%08x" % (reg_name + ":", val)
-            ###### CO: CHANGE FROM https://github.com/lorf/klipper/commits/tmc2208-decode ######
-            if reg_name == 'GSTAT':
-                msg += ("\n- drv_err (error shutdown): %d\n"
-                        + "- uv_cp (undervoltage):     %d") % (
-                        (val >> 1) & 1,
-                        (val >> 2) & 1)
-            elif reg_name == 'IOIN':
-                if (val >> 8) & 1:
-                    # TMC220x
-                    msg += ("\n- ENN pin:                  %d\n"
-                            + "- MS1 pin:                  %d\n"
-                            + "- MS2 pin:                  %d\n"
-                            + "- DIAG pin:                 %d\n"
-                            + "- PDN_UART pin:             %d\n"
-                            + "- STEP pin:                 %d\n"
-                            + "- SEL_A (driver type):      1 (TMC220x)\n"
-                            + "- DIR pin:                  %d\n"
-                            + "- VERSION:                  0x%02x") % (
-                            val & 1,
-                            (val >> 2) & 1,
-                            (val >> 3) & 1,
-                            (val >> 4) & 1,
-                            (val >> 6) & 1,
-                            (val >> 7) & 1,
-                            (val >> 9) & 1,
-                            (val >> 24) & 0xff)
-                else:
-                    # TMC222x
-                    msg += ("\n- PDN_UART pin:             %d\n"
-                            + "- SPREAD pin:               %d\n"
-                            + "- DIR pin:                  %d\n"
-                            + "- ENN pin:                  %d\n"
-                            + "- STEP pin:                 %d\n"
-                            + "- MS1 pin:                  %d\n"
-                            + "- MS2 pin:                  %d\n"
-                            + "- SEL_A (driver type):      0 (TMC222x)\n"
-                            + "- VERSION:                  0x%02x") % (
-                            (val >> 1) & 1,
-                            (val >> 2) & 1,
-                            (val >> 3) & 1,
-                            (val >> 4) & 1,
-                            (val >> 5) & 1,
-                            (val >> 6) & 1,
-                            (val >> 7) & 1,
-                            (val >> 24) & 0xff)
-            elif reg_name == 'DRV_STATUS':
-                msg += ("\n- otpw (overtemp warning):  %d\n"
-                        + "- ot (overtemperature):     %d\n"
-                        + "- s2ga (short to ground A): %d\n"
-                        + "- s2gb (short to ground B): %d\n"
-                        + "- s2vsa (low side short A): %d\n"
-                        + "- s2vsb (low side short B): %d\n"
-                        + "- ola (open load A):        %d\n"
-                        + "- olb (open load B):        %d\n"
-                        + "- t120 (120 C reached):     %d\n"
-                        + "- t143 (143 C reached):     %d\n"
-                        + "- t150 (150 C reached):     %d\n"
-                        + "- t157 (157 C reached):     %d\n"
-                        + "- CS_ACTUAL (actual current scale): %d\n"
-                        + "- stealth (stealthChop):    %d\n"
-                        + "- stst (standstill):        %d") % (
-                        val & 1,
-                        (val >> 1) & 1,
-                        (val >> 2) & 1,
-                        (val >> 3) & 1,
-                        (val >> 4) & 1,
-                        (val >> 5) & 1,
-                        (val >> 6) & 1,
-                        (val >> 7) & 1,
-                        (val >> 8) & 1,
-                        (val >> 9) & 1,
-                        (val >> 10) & 1,
-                        (val >> 11) & 1,
-                        (val >> 16) & 0x1f,
-                        (val >> 30) & 1,
-                        val >> 31)
-            elif reg_name == 'PWM_SCALE':
-                msg += ("\n- PWM_SCALE_SUM:            %d\n"
-                        + "- PWM_SCALE_AUTO:           %d") % (
-                        val & 0xff,
-                        (-1 if ((val >> 24) & 1) else 1) * ((val >> 16) & 0xff))
-            elif reg_name == 'PWM_AUTO':
-                msg += ("\n- PWM_OFS_AUTO:             %d\n"
-                        + "- PWM_GRAD_AUTO:            %d") % (
-                        val & 0xff,
-                        (val >> 16) & 0xff)
-            elif reg_name == 'PWMCONF':
-                msg += ("\n- PWM_OFS (User def. ampl.):                %d\n"
-                        + "- PWM_GRAD (User def. ampl. grad.):         %d\n"
-                        + "- freq0/1 (PWM frequency selection):        2/%d fCLK\n"
-                        + "- pwm_autoscale (PWM aut. ampl. scaling):   %s\n"
-                        + "- pwm_autograd (PWM aut. gradient adapt.):  %s\n"
-                        + "- freewheel0/1:                             %s\n"
-                        + "- PWM_REG (Regulation loop gradient):       %d incr.\n"
-                        + "- PWM_LIM (PWM aut. scale amplitude lim):   %d\n"
-                       ) % (
-                            ((val >> 0) & 0xff),
-                            ((val >> 8) & 0xff),
-                            (1024, 683, 512, 410)[((val >> 16) & 0b11)],
-                            ("User defined", "Automatic")[((val >> 18) & 0b1)],
-                            ("Fixed", "Automatic")[((val >> 19) & 0b1)],
-                            ("Normal", "Freewheeling",
-                             "Use LS drivers", "Use HS drivers")[((val >> 20) & 0b11)],
-                            0.5*((val >> 24) & 0b11),
-                            ((val >> 31) & 0b1111),
-                           )
-            elif reg_name == 'CHOPCONF':
-                msg += ("\n- TOFF (off time and driver enable):        %d\n"
-                        + "- HSTRT (hysteresis start value):           %d\n"
-                        + "- HEND (hysteresis end value):              %d\n"
-                        + "- TBL (blank time select):                  %d\n"
-                        + "- vsense (sense resistor voltage):          %s\n"
-                        + "- MRES (micro step resolution):             %s\n"
-                        + "- intpol (interpolation to 256 microsteps): %d\n"
-                        + "- dedge (enable double edge step pulses):   %d\n"
-                        + "- diss2g (short to GND protection disable): %d\n"
-                        + "- diss2vs (Low side short protection dis.): %d\n"
-                       ) % (
-                            ((val >> 0) & 0b1111),
-                            ((val >> 4) & 0b111),
-                            ((val >> 7) & 0b111),
-                            (16, 24, 32, 40)[((val >> 15) & 0b11)],
-                            ("High", "Low")[((val >> 17) & 0b1)],
-                            (256, 128, 64, 32, 16, 8, 4, 2, "FULL")[((val >> 24) & 0b1111)],
-                            (val >> 28) & 0b1,
-                            (val >> 29) & 0b1,
-                            (val >> 30) & 0b1,
-                            (val >> 31) & 0b1,
-                       )
-            elif reg_name == 'MSCURACT':
-                msg += ("\n- CUR_A (Actual microstep current phase A): %d\n"
-                        + "- CUR_B (Actual microstep current phase B): %d\n"
-                       ) % (
-                            ((val >> 0) & 0xff),
-                            ((val >> 16) & 0xff),
-                           )
-            elif reg_name == 'GCONF':
-                msg += ("\n- I_scale_analog:   %d\n"
-                        + "- internal_Rsense:  %d\n"
-                        + "- en_spreadCycle:   %d\n"
-                        + "- shaft:            %d\n"
-                        + "- index_otpw:       %d\n"
-                        + "- index_step:       %d\n"
-                        + "- pdn_disable:      %d\n"
-                        + "- mstep_reg_select: %d\n"
-                        + "- multistep_filt:   %d\n"
-                        + "- test_mode:        %d\n"
-                       ) % (
-                            ((val >> 0) & 0b1),
-                            ((val >> 1) & 0b1),
-                            ((val >> 2) & 0b1),
-                            ((val >> 3) & 0b1),
-                            ((val >> 4) & 0b1),
-                            ((val >> 5) & 0b1),
-                            ((val >> 6) & 0b1),
-                            ((val >> 7) & 0b1),
-                            ((val >> 8) & 0b1),
-                            ((val >> 9) & 0b1),
-                      )
-            ###### CO: CHANGE FROM https://github.com/lorf/klipper/commits/tmc2208-decode ######
+            # IOIN has different mappings depending on the driver type
+            # (SEL_A field of IOIN reg)
+            if reg_name == "IOIN":
+                drv_type = self.field_helper.get_field("IOIN@TMC222x", "SEL_A",
+                                                       val)
+                reg_name = "IOIN@TMC220x" if drv_type else "IOIN@TMC222x"
+            msg = self.field_helper.pretty_format(reg_name, val)
             logging.info(msg)
             gcode.respond_info(msg)
 
 def load_config_prefix(config):
     return TMC2208(config)
-
-
