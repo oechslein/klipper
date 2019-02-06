@@ -3,13 +3,10 @@
 # Copyright (C) 2018  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import math, logging, collections
+import logging, collections
 import tmc2130
 
 TMC_FREQUENCY=12000000.
-GCONF_PDN_DISABLE = 1<<6
-GCONF_MSTEP_REG_SELECT = 1<<7
-GCONF_MULTISTEP_FILT = 1<<8
 
 Registers = {
     "GCONF": 0x00, "GSTAT": 0x01, "IFCNT": 0x02, "SLAVECONF": 0x03,
@@ -288,72 +285,37 @@ class TMC2208:
         gcode.register_mux_command(
             "DUMP_TMC", "STEPPER", self.name,
             self.cmd_DUMP_TMC, desc=self.cmd_DUMP_TMC_help)
-        # Get config for initial driver settings
-        self.field_helper = tmc2130.FieldHelper(Fields, FieldFormatters)
-        run_current = config.getfloat('run_current', above=0., maxval=2.)
-        hold_current = config.getfloat('hold_current', run_current,
-                                       above=0., maxval=2.)
-        sense_resistor = config.getfloat('sense_resistor', 0.110, above=0.)
-        steps = {'256': 0, '128': 1, '64': 2, '32': 3, '16': 4,
-                 '8': 5, '4': 6, '2': 7, '1': 8}
-        self.mres = config.getchoice('microsteps', steps)
-        interpolate = config.getboolean('interpolate', True)
-        sc_velocity = config.getfloat('stealthchop_threshold', 0., minval=0.)
-        sc_threshold = self.velocity_to_clock(config, sc_velocity)
-        iholddelay = config.getint('driver_IHOLDDELAY', 8, minval=0, maxval=15)
-        tpowerdown = config.getint('driver_TPOWERDOWN', 20, minval=0, maxval=255)
-        blank_time_select = config.getint('driver_BLANK_TIME_SELECT', 2,
-                                          minval=0, maxval=3)
-        toff = config.getint('driver_TOFF', 3, minval=1, maxval=15)
-        hend = config.getint('driver_HEND', 0, minval=0, maxval=15)
-        hstrt = config.getint('driver_HSTRT', 5, minval=0, maxval=7)
-        pwm_autograd = config.getboolean('driver_PWM_AUTOGRAD', True)
-        pwm_autoscale = config.getboolean('driver_PWM_AUTOSCALE', True)
-        pwm_lim = config.getint('driver_PWM_LIM', 12, minval=0, maxval=15)
-        pwm_reg = config.getint('driver_PWM_REG', 8, minval=0, maxval=15)
-        pwm_freq = config.getint('driver_PWM_FREQ', 1, minval=0, maxval=3)
-        pwm_grad = config.getint('driver_PWM_GRAD', 14, minval=0, maxval=255)
-        pwm_ofs = config.getint('driver_PWM_OFS', 36, minval=0, maxval=255)
-        # calculate current
-        vsense = False
-        irun = self.current_bits(run_current, sense_resistor, vsense)
-        ihold = self.current_bits(hold_current, sense_resistor, vsense)
-        if irun < 16 and ihold < 16:
-            vsense = True
-            irun = self.current_bits(run_current, sense_resistor, vsense)
-            ihold = self.current_bits(hold_current, sense_resistor, vsense)
-        # Configure registers
+        # Setup basic register values
         self.ifcnt = None
-        self.init_regs = collections.OrderedDict()
-        self.init_regs['GCONF'] = (
-            ((sc_velocity == 0.) << 2) | GCONF_PDN_DISABLE
-            | GCONF_MSTEP_REG_SELECT | GCONF_MULTISTEP_FILT)
-        self.init_regs['CHOPCONF'] = (
-            toff | (hstrt << 4) | (hend << 7) | (blank_time_select << 15)
-            | (vsense << 17) | (self.mres << 24) | (interpolate << 28))
-        self.init_regs['IHOLD_IRUN'] = ihold | (irun << 8) | (iholddelay << 16)
-        self.init_regs['TPOWERDOWN'] = tpowerdown
-        self.init_regs['TPWMTHRS'] = max(0, min(0xfffff, sc_threshold))
-        self.init_regs['PWMCONF'] = (
-            pwm_ofs | (pwm_grad << 8) | (pwm_freq << 16)
-            | (pwm_autoscale << 18) | (pwm_autograd << 19)
-            | (pwm_reg << 24) | (pwm_lim << 28))
-    def current_bits(self, current, sense_resistor, vsense_on):
-        sense_resistor += 0.020
-        vsense = 0.32
-        if vsense_on:
-            vsense = 0.18
-        cs = int(32. * current * sense_resistor * math.sqrt(2.) / vsense
-                 - 1. + .5)
-        return max(0, min(31, cs))
-    def velocity_to_clock(self, config, velocity):
-        if not velocity:
-            return 0
-        stepper_name = config.get_name().split()[1]
-        stepper_config = config.getsection(stepper_name)
-        step_dist = stepper_config.getfloat('step_distance')
-        step_dist_256 = step_dist / (1 << self.mres)
-        return int(TMC_FREQUENCY * step_dist_256 / velocity + .5)
+        self.regs = collections.OrderedDict()
+        self.fields = tmc2130.FieldHelper(Fields, FieldFormatters, self.regs)
+        self.fields.set_field("pdn_disable", True)
+        self.fields.set_field("mstep_reg_select", True)
+        self.fields.set_field("multistep_filt", True)
+        vsense, irun, ihold = tmc2130.get_config_current(config)
+        self.fields.set_field("vsense", vsense)
+        self.fields.set_field("IHOLD", ihold)
+        self.fields.set_field("IRUN", irun)
+        mres, en, thresh = tmc2130.get_config_stealthchop(config, TMC_FREQUENCY)
+        self.fields.set_field("MRES", mres)
+        self.fields.set_field("en_spreadCycle", not en)
+        self.fields.set_field("TPWMTHRS", thresh)
+        # Allow other registers to be set from the config
+        set_config_field = self.fields.set_config_field
+        set_config_field(config, "toff", 3)
+        set_config_field(config, "hstrt", 5)
+        set_config_field(config, "hend", 0)
+        set_config_field(config, "TBL", 2, "driver_BLANK_TIME_SELECT")
+        set_config_field(config, "intpol", True, "interpolate")
+        set_config_field(config, "IHOLDDELAY", 8)
+        set_config_field(config, "TPOWERDOWN", 20)
+        set_config_field(config, "PWM_OFS", 36)
+        set_config_field(config, "PWM_GRAD", 14)
+        set_config_field(config, "pwm_freq", 1)
+        set_config_field(config, "pwm_autoscale", True)
+        set_config_field(config, "pwm_autograd", True)
+        set_config_field(config, "PWM_REG", 8)
+        set_config_field(config, "PWM_LIM", 12)
     def build_config(self):
         bit_ticks = int(self.mcu.get_adjusted_freq() / 9000.)
         self.mcu.add_config_cmd(
@@ -363,7 +325,7 @@ class TMC2208:
         self.tmcuart_send_cmd = self.mcu.lookup_command(
             "tmcuart_send oid=%c write=%*s read=%c", cq=cmd_queue)
     def handle_connect(self):
-        for reg_name, val in self.init_regs.items():
+        for reg_name, val in self.regs.items():
             self.set_register(reg_name, val)
     def get_register(self, reg_name):
         reg = Registers[reg_name]
@@ -394,9 +356,10 @@ class TMC2208:
         raise self.printer.config_error(
             "Unable to write tmc2208 '%s' register %s" % (self.name, reg_name))
     def get_microsteps(self):
-        return 256 >> self.mres
+        return 256 >> self.fields.get_field("MRES")
     def get_phase(self):
-        return (self.get_register("MSCNT") & 0x3ff) >> self.mres
+        mscnt = self.fields.get_field("MSCNT", self.get_register("MSCNT"))
+        return mscnt >> self.fields.get_field("MRES")
     cmd_DUMP_TMC_help = "Read and display TMC stepper driver registers"
     def cmd_DUMP_TMC(self, params):
         self.printer.lookup_object('toolhead').get_last_move_time()
@@ -410,10 +373,9 @@ class TMC2208:
             # IOIN has different mappings depending on the driver type
             # (SEL_A field of IOIN reg)
             if reg_name == "IOIN":
-                drv_type = self.field_helper.get_field("IOIN@TMC222x", "SEL_A",
-                                                       val)
+                drv_type = self.fields.get_field("SEL_A", val)
                 reg_name = "IOIN@TMC220x" if drv_type else "IOIN@TMC222x"
-            msg = self.field_helper.pretty_format(reg_name, val)
+            msg = self.fields.pretty_format(reg_name, val)
             logging.info(msg)
             gcode.respond_info(msg)
 
