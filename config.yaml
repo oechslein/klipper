@@ -1,0 +1,770 @@
+accessControl:
+  salt: zveyROmJRMwBJFPLMjIm8TYLSS8YWsLX
+api:
+  key: 1FCADAC3D2BF4883BC66B9F9D5F0D2B8
+appearance:
+  components:
+    order:
+      navbar:
+      - plugin_klipper
+      - plugin_navbartemp
+      - plugin_octolapse
+      - plugin_tasmota
+      - settings
+      - systemmenu
+      - plugin_announcements
+      - plugin_pi_support
+      - login
+      sidebar:
+      - plugin_estop
+      - plugin_klipper
+      - state
+      - files
+      - plugin_shutdownprinter
+      - plugin_printer_safety_check
+      - plugin_automaticshutdown
+      tab:
+      - control
+      - gcodeviewer
+      - temperature
+      - terminal
+      - plugin_klipper_main
+      - plugin_bedlevelvisualizer
+      - timelapse
+      - plugin_octolapse
+      - plugin_SlicerSettingsTab
+      - plugin_cancelobject
+      - plugin_hardwarepwm
+  defaultLanguage: en
+  name: Ender-3 Pro
+controls:
+- children:
+  - command: respond type=command msg=action:led_top_%(brightness)s
+    confirm: null
+    input:
+    - default: 100
+      name: Brightness
+      parameter: brightness
+      slider:
+        max: '100'
+        min: '0'
+        step: '10'
+    name: LED
+  layout: vertical
+  name: LED
+feature:
+  keyboardControl: false
+  sdSupport: false
+plugins:
+  ABL_Expert:
+    eeprom_save: true
+    preheat_selected: PLA
+    probe_offset: 2.97
+  BetterHeaterTimeout:
+    _config_version: 2
+  PrintTimeGenius:
+    analyzers:
+    - command: '"/home/pi/oprint/bin/python2" "/home/pi/oprint/lib/python2.7/site-packages/octoprint_PrintTimeGenius/analyzers/analyze_gcode_comments.py"
+        "{gcode}"'
+      description: All gcode analyzers (usually not as good as marlin-calc)
+      enabled: false
+    - command: '"/home/pi/oprint/bin/python2" "/home/pi/oprint/lib/python2.7/site-packages/octoprint_PrintTimeGenius/analyzers/analyze_progress.py"
+        marlin-calc "{gcode}" "{mcodes}"'
+      description: Marlin firmware simulation (replaces Octoprint built-in, faster
+        and more accurate)
+      enabled: true
+    - command: '"/home/pi/oprint/bin/python2" "/home/pi/oprint/lib/python2.7/site-packages/octoprint_PrintTimeGenius/analyzers/analyze_gcode_comments.py"
+        "{gcode}" --parsers slic3r_pe_print_time slic3r_pe_print_time_remaining'
+      description: Use Slic3r PE M73 time remaining
+      enabled: true
+    print_history:
+    - analysisFirstFilamentPrintTime: 12.0
+      analysisLastFilamentPrintTime: 912.0
+      analysisPrintTime: 912.0
+      compensatedPrintTime: 1095.6000047036882
+      firstFilamentPrintTime: 0.30599498748779297
+      lastFilamentPrintTime: 1181.2304430007935
+      payload:
+        file: /home/pi/.octoprint/uploads/einstellfahrplan_heattower_medium_220to240_2.222.gcode
+        filename: einstellfahrplan_heattower_medium_220to240_2.222.gcode
+        name: einstellfahrplan_heattower_medium_220to240_2.222.gcode
+        origin: local
+        path: einstellfahrplan_heattower_medium_220to240_2.222.gcode
+        size: 177550
+        time: 1195.403550863266
+      timestamp: 1552249371.869004
+    - analysisFirstFilamentPrintTime: 18.0
+      analysisLastFilamentPrintTime: 2358.0
+      analysisPrintTime: 2358.0
+      compensatedPrintTime: 2792.2437553987183
+      firstFilamentPrintTime: 0.34409308433532715
+      lastFilamentPrintTime: 2539.2095050811768
+      payload:
+        file: /home/pi/.octoprint/uploads/Fuss_v1.gcode
+        filename: Fuss_v1.gcode
+        name: Fuss_v1.gcode
+        origin: local
+        path: Fuss_v1.gcode
+        size: 2645828
+        time: 2552.7209961414337
+      timestamp: 1552246745.777973
+    - analysisFirstFilamentPrintTime: 18.0
+      analysisLastFilamentPrintTime: 2358.0
+      analysisPrintTime: 2358.0
+      compensatedPrintTime: 2792.2437553987183
+      firstFilamentPrintTime: 0.28076601028442383
+      lastFilamentPrintTime: 2806.112557888031
+      payload:
+        file: /home/pi/.octoprint/uploads/Fuss_v1.gcode
+        filename: Fuss_v1.gcode
+        name: Fuss_v1.gcode
+        origin: local
+        path: Fuss_v1.gcode
+        size: 2645828
+        time: 2819.611079931259
+      timestamp: 1552216277.287144
+    - analysisFirstFilamentPrintTime: 26.0
+      analysisLastFilamentPrintTime: 6479.042511002563
+      analysisPrintTime: 6506.0
+      compensatedPrintTime: 7698.498199980238
+      payload:
+        file: /home/pi/.octoprint/uploads/Display_Front_v8.gcode
+        filename: Display_Front_v8.gcode
+        name: Display_Front_v8.gcode
+        origin: local
+        path: Display_Front_v8.gcode
+        size: 3730607
+        time: 7116.203054904938
+      timestamp: 1552083381.788031
+    - analysisFirstFilamentPrintTime: 5.0
+      analysisLastFilamentPrintTime: 25308.665313768342
+      analysisPrintTime: 25325.0
+      compensatedPrintTime: 30166.45266207423
+      firstFilamentPrintTime: 193.85655188560486
+      lastFilamentPrintTime: 26403.94346189499
+      payload:
+        file: /home/pi/.octoprint/uploads/PiCase_right_v58.gcode
+        filename: PiCase_right_v58.gcode
+        name: PiCase_right_v58.gcode
+        origin: local
+        path: PiCase_right_v58.gcode
+        size: 16982248
+        time: 26442.797873973846
+      timestamp: 1551934064.503471
+  TerminalCommands:
+    controls:
+    - commands: M503
+      name: Report Settings
+    - commands: M500
+      name: Save Settings
+    - commands: M501
+      name: Load Settings
+    - commands: M502
+      name: Factory Reset
+    - commands: M117 Wait for Bed Temp; M190 S60; M117 Autoprobe; G28; G29 P1; M190
+        S60; M140 S0; M117 Autoprobe Done
+      name: Auto Probing Full
+    - commands: 'G29 S0 '
+      name: Save Mesh Mirror
+    - commands: G29 S1
+      name: Save to Mesh Magnetic
+    - commands: G29 S2
+      name: Save to Mesh Mirror+FR4
+    - commands: G29 L0
+      name: Load Mesh Mirror
+    - commands: G29 L1
+      name: Load Mesh Magnetic
+    - commands: G29 L2
+      name: Load Mesh Mirror+FR4
+    - commands: G29 A
+      name: Activate UBL
+    - commands: G29 D
+      name: Deactivate UBL
+    - commands: M117 Wait for Bed Temp; M190 S60; G28; G29 J; M140 S0; M117 FastProbe
+        Done
+      name: Fast Probe (3 points)
+  _disabled:
+  - discovery
+  - filemanager
+  - virtual_printer
+  - stlviewer
+  - bedlevelingwizard
+  - slic3r
+  - slicer
+  - HeaterTimeout
+  - cura
+  - taborder
+  - themeify
+  - ABL_Expert
+  - BLTouch
+  - eeprom_marlin
+  - title_status
+  - status_line
+  - enclosure
+  - multi_colors
+  - printhistory
+  - rgb_status
+  - cancelobject
+  - floatingnavbar
+  - hardwarepwm
+  - portlister
+  - sidebartempgraph
+  action_command_prompt:
+    selection_command: ''
+  actioncommands:
+    command_definitions:
+    - action: led_top_toggle
+      command: ~/led_top.sh
+      enabled: true
+      type: system
+    - action: led_top_0
+      command: ~/led_top.sh 0
+      enabled: true
+      type: system
+    - action: led_top_10
+      command: ~/led_top.sh 102
+      enabled: true
+      type: system
+    - action: led_top_20
+      command: ~/led_top.sh 205
+      enabled: true
+      type: system
+    - action: led_top_30
+      command: ~/led_top.sh 307
+      enabled: true
+      type: system
+    - action: led_top_40
+      command: ~/led_top.sh 409
+      enabled: true
+      type: system
+    - action: led_top_50
+      command: ~/led_top.sh 512
+      enabled: true
+      type: system
+    - action: led_top_60
+      command: ~/led_top.sh 614
+      enabled: true
+      type: system
+    - action: led_top_70
+      command: ~/led_top.sh 716
+      enabled: true
+      type: system
+    - action: led_top_80
+      command: ~/led_top.sh 818
+      enabled: true
+      type: system
+    - action: led_top_90
+      command: ~/led_top.sh 921
+      enabled: true
+      type: system
+    - action: led_top_100
+      command: ~/led_top.sh 1023
+      enabled: true
+      type: system
+  active_filters_extended:
+    activeFilters:
+    - 'Recv: wait'
+    - '(Send: (N\d+\s+)?M27)|(Recv: SD printing byte)|(Recv: Not SD printing)'
+    - '(Send: (N\d+\s+)?M105)|(Recv:\s+(ok\s+)?.*(B|T\d*):\d+)'
+  announcements:
+    _config_version: 1
+    channels:
+      _blog:
+        read_until: 1551867600
+      _important:
+        read_until: 1521111600
+      _octopi:
+        read_until: 1549966200
+      _plugins:
+        read_until: 1551657600
+      _releases:
+        read_until: 1544449800
+    enabled_channels:
+    - _octopi
+    - _plugins
+    - _releases
+    - _blog
+  automaticshutdown:
+    abortTimeout: '1800'
+  bedlevelvisualizer:
+    command: '@BEDLEVELVISUALIZER
+
+      BED_MESH_OUTPUT'
+    flipY: true
+    mesh_timestamp: 12.3.2019, 22:37:29
+    stored_mesh:
+    - - '-0.010833'
+      - '-0.012222'
+      - '-0.013611'
+      - '-0.015000'
+      - '-0.016389'
+      - '-0.017778'
+      - '-0.019167'
+    - - '-0.001944'
+      - '0.000813'
+      - '0.003097'
+      - '0.004907'
+      - '0.006245'
+      - '0.007109'
+      - '0.007500'
+    - - '0.006111'
+      - '0.010103'
+      - '0.013591'
+      - '0.016574'
+      - '0.019053'
+      - '0.021029'
+      - '0.022500'
+    - - '0.013333'
+      - '0.015648'
+      - '0.017870'
+      - '0.020000'
+      - '0.022037'
+      - '0.023981'
+      - '0.025833'
+    - - '0.019722'
+      - '0.017448'
+      - '0.015936'
+      - '0.015185'
+      - '0.015195'
+      - '0.015967'
+      - '0.017500'
+    - - '0.025278'
+      - '0.015504'
+      - '0.007788'
+      - '0.002129'
+      - '-0.001471'
+      - '-0.003015'
+      - '-0.002500'
+    - - '0.030000'
+      - '0.009815'
+      - '-0.006574'
+      - '-0.019167'
+      - '-0.027963'
+      - '-0.032963'
+      - '-0.034167'
+    stored_mesh_x:
+    - 0
+    - 39
+    - 78
+    - 118
+    - 157
+    - 196
+    - 235
+    stored_mesh_y:
+    - 0
+    - 39
+    - 78
+    - 118
+    - 157
+    - 196
+    - 235
+    stored_mesh_z_height: 250
+  cancelobject:
+    object_regex:
+    - objreg: ; process (.*)
+    - objreg: ;MESH:(.*)
+    - objreg: ; printing object (.*)
+    - objreg: ; object:{"name":"(.*)"
+    shownav: false
+  cura:
+    cura_engine: /usr/local/bin/cura_engine
+  detailedprogress:
+    eta_strftime: '%H:%M:%S'
+    etl_format: '{hours:02d}:{minutes:02d}:{seconds:02d}'
+    messages:
+    - 'Left: {printTimeLeft}'
+    - 'ETA: {ETA}'
+  discovery:
+    publicPort: 80
+    upnpUuid: 492bde38-11b5-4241-b1a8-b002fb70d33d
+  enclosure:
+    _config_version: 6
+    debug: true
+    gcode_control: true
+    rpi_outputs:
+    - active_low: true
+      alarm_set_temp: 0
+      auto_shutdown: false
+      auto_startup: false
+      controlled_io: 0
+      controlled_io_set_value: Low
+      default_duty_cycle: '50'
+      default_ledstrip_color: ''
+      default_neopixel_color: ''
+      duty_a: 0
+      duty_b: 0
+      duty_cycle: 0
+      gcode: ''
+      gpio_pin: '24'
+      gpio_status: false
+      hide_btn_ui: false
+      index_id: 1
+      label: LED on top
+      ledstrip_color: rgb(0,0,0)
+      ledstrip_gpio_clk: ''
+      ledstrip_gpio_dat: ''
+      linked_temp_sensor: ''
+      microcontroller_address: 0
+      neopixel_brightness: 255
+      neopixel_color: rgb(0,0,0)
+      neopixel_count: 0
+      new_duty_cycle: ''
+      new_ledstrip_color: ''
+      new_neopixel_color: ''
+      output_type: gcode_output
+      pwm_frequency: '100'
+      pwm_status: 50
+      pwm_temperature_linked: false
+      shell_script: ''
+      show_on_navbar: false
+      shutdown_on_failed: false
+      shutdown_time: 0
+      startup_time: 0
+      startup_with_server: false
+      temp_ctr_deadband: 0
+      temp_ctr_default_value: 0
+      temp_ctr_max_temp: 0
+      temp_ctr_new_set_value: ''
+      temp_ctr_set_value: 0
+      temp_ctr_type: heater
+      temperature_a: 0
+      temperature_b: 0
+      toggle_timer: false
+      toggle_timer_off: 0
+      toggle_timer_on: 0
+  firmwareupdater:
+    avrdude_avrmcu: m2560
+    avrdude_baudrate: ''
+    avrdude_path: /usr/bin/avrdude
+    avrdude_programmer: wiring
+    flash_method: avrdude
+  hardwarepwm:
+    dutyCycle: 0.0
+  klipper:
+    _config_version: 2
+    configuration:
+      path: ~/klipper/printer.cfg
+    macros:
+    - macro: M112
+      name: E-Stop
+      sidebar: false
+      tab: true
+    - macro: PID_CALIBRATE HEATER={label:Heater, default:extruder} TARGET={label:Target
+        Temperature, unit:°C, default:190} WRITE_FILE={label:Write to File, default:0,
+        options:0|1}
+      name: PID Calibrate
+      sidebar: false
+      tab: true
+    - macro: BED_MESH_CALIBRATE
+      name: Calibrate Bed
+      sidebar: false
+      tab: true
+    - macro: SAVE_CONFIG
+      name: Save Config
+      sidebar: false
+      tab: true
+    probe:
+      height: '0.1'
+  mqtt:
+    broker:
+      password: NhIVqAP1PAfemBN4AI8VV
+      url: iobroker.diskstation
+      username: oechslein
+    publish:
+      events:
+        files: false
+        slicing: false
+        timelapse: false
+      printerData: true
+  preheat:
+    fallback_bed: '45'
+    fallback_tool: '190'
+  printhistory:
+    spool_inventory:
+    - currency: €
+      name: Alfawise blue
+      price: '22'
+  shutdownprinter:
+    abortTimeout: '60'
+    gcode: 'M81 '
+    temperatureTarget: true
+    temperatureValue: '40'
+    url: 192.168.178.80 1
+  sidebarorder:
+    sidebars:
+    - name: connection
+    - name: state
+    - name: files
+  softwareupdate:
+    _config_version: 6
+    check_providers:
+      ABL_Expert: ABL_Expert
+      BLTouch: BLTouch
+      BedLevelingWizard: bedlevelingwizard
+      BetterHeaterTimeout: BetterHeaterTimeout
+      GcodeEditor: GcodeEditor
+      PrintTimeGenius: PrintTimeGenius
+      ProgressBasedOnTime: ProgressBasedOnTime
+      Slic3r: slic3r
+      SlicerSettingsParser: SlicerSettingsParser
+      SlicerSettingsTab: SlicerSettingsTab
+      TerminalCommands: TerminalCommands
+      actioncommands: actioncommands
+      active_filters_extended: active_filters_extended
+      automaticshutdown: automaticshutdown
+      autoscroll: autoscroll
+      autoselect: autoselect
+      bedlevelvisualizer: bedlevelvisualizer
+      cancelobject: cancelobject
+      customcontrol: customControl
+      detailedprogress: detailedprogress
+      display-eta: octoprint_eta
+      dragon_order: dragon_order
+      emergencyaction: HeaterTimeout
+      enclosure: enclosure
+      estop: estop
+      excluderegion: excluderegion
+      fanspeedslider: fanspeedslider
+      filemanager: filemanager
+      filetypes: filetypes
+      firmwareupdater: firmwareupdater
+      floatingnavbar: floatingnavbar
+      fullscreen: fullscreen
+      gcodesystemcommands: gcodesystemcommands
+      gitfiles: gitfiles
+      hardwarepwm: hardwarepwm
+      klipper: klipper
+      layerdisplay: layerdisplay
+      mqtt: mqtt
+      multi_colors: multi_colors
+      navbartemp: navbartemp
+      octolapse: octolapse
+      portlister: portlister
+      preheat: preheat
+      printhistory: printhistory
+      rgb_status: rgb_status
+      shutdownprinter: shutdownprinter
+      sidebarorder: sidebarorder
+      sidebartempgraph: sidebartempgraph
+      slicer: slicer
+      statefulsidebar: statefulsidebar
+      systemcommandeditor: systemcommandeditor
+      taborder: taborder
+      tasmota: tasmota
+      telegram: telegram
+      tempsgraph: tempsgraph
+      themeify: themeify
+      title_status: title_status
+      yamlpatcher: yamlpatcher
+    checks:
+      octoprint:
+        checkout_folder: null
+        prerelease: true
+        prerelease_channel: rc/devel
+  taborder:
+    _config_version: 4
+    tabs:
+    - icon: 'fas '
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: terminal
+      showtext: true
+    - icon: 'fas '
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: control
+      showtext: true
+    - icon: 'fas '
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: temperature
+      showtext: true
+    - icon: 'fas '
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: gcodeviewer
+      showtext: true
+    - icon: 'fas '
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: plugin_bedlevelvisualizer
+      showtext: true
+    - icon: 'fas '
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: plugin_printhistory
+      showtext: true
+    - icon: 'fas '
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: timelapse
+      showtext: true
+    - icon: ''
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: plugin_octolapse
+      showtext: true
+    - icon: ''
+      icon_color: '#000000'
+      icon_tooltip: ''
+      name: plugin_SlicerSettingsTab
+      showtext: true
+  tasmota:
+    _config_version: 3
+    arrSmartplugs:
+    - autoConnect: true
+      autoConnectDelay: '5'
+      autoDisconnect: true
+      autoDisconnectDelay: '0'
+      btnColor: '#808080'
+      currentState: 'on'
+      displayWarning: true
+      gcodeEnabled: true
+      gcodeOffDelay: 0
+      gcodeOnDelay: 0
+      icon: icon-bolt
+      idx: '1'
+      ip: 192.168.178.80
+      label: PrinterPlug
+      password: MorpiN
+      sysCmdOff: false
+      sysCmdOffDelay: 0
+      sysCmdOn: true
+      sysCmdOnDelay: '0'
+      sysRunCmdOff: sudo service klipper stop
+      sysRunCmdOn: sudo service klipper start && sleep 3 && echo FIRMWARE_RESTART
+        > /tmp/printer && ~/led_top.sh 1023
+      username: admin
+      warnPrinting: true
+  telegram:
+    _config_version: 3
+    chats:
+      '518413182':
+        accept_commands: true
+        allow_users: false
+        commands:
+          /abort: true
+          /con: true
+          /ctrl: true
+          /dontshutup: true
+          /files: true
+          /help: false
+          /print: true
+          /settings: true
+          /shutup: true
+          /status: true
+          /sys: true
+          /test: false
+          /togglepause: true
+          /tune: true
+          /upload: true
+          /user: true
+          'No': false
+          'Yes': false
+        id: '518413182'
+        image: /plugin/telegram/img/static/default.jpg?1552430528104
+        new: false
+        newUsr: false
+        notifications:
+          PrintDone: true
+          PrintFailed: true
+          PrintPaused: true
+          PrintResumed: true
+          PrintStarted: true
+          PrinterShutdown: true
+          PrinterStart: true
+          StatusNotPrinting: false
+          StatusPrinting: false
+          ZChange: true
+        private: true
+        send_notifications: true
+        title: 'Christoph - Oechslein - '
+    image_not_connected: false
+    messages:
+      PrintDone:
+        text: Finished {file} within {time_done}.
+      PrintFailed:
+        text: Printing {file} failed after {time_done}.
+      PrintPaused:
+        text: Paused {file} at {percent}% after {time_done}. {time_left} remaining.
+      PrintResumed:
+        text: Resumed {file} at {percent}% after {time_done}. {time_left} remaining.
+      PrintStarted:
+        text: Started {file}. {time_left} remaining.
+      StatusNotPrinting:
+        text: 'Bed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.
+
+          Not printing.'
+      StatusPrinting:
+        combined: true
+      ZChange:
+        text: '{time_done}, {percent}% done, {time_left} remaining.
+
+          Printing at Z={z}.
+
+          Bed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.'
+    notification_height: '0'
+    notification_time: '30'
+    send_icon: false
+    token: 760704690:AAHk_UYQkrx7KkmLrHQ3yUPqhKvbMKLR27U
+  themeify:
+    theme: material_ui_light
+  tracking:
+    enabled: true
+    unique_id: 65c641d2-0215-44c3-b599-948651183007
+printerProfiles:
+  default: _default
+serial:
+  additionalPorts:
+  - /tmp/printer
+  autoconnect: true
+  baudrate: 115200
+  disconnectOnErrors: false
+  log: true
+  port: /tmp/printer
+server:
+  commands:
+    serverRestartCommand: sudo service octoprint restart
+    systemRestartCommand: sudo shutdown -r now
+    systemShutdownCommand: sudo shutdown -h now
+  firstRun: false
+  onlineCheck:
+    enabled: true
+    host: 192.168.178.5
+  pluginBlacklist:
+    enabled: true
+  secretKey: YxrccWElzCTOFnIXTuj6TRZGbDEQQ14v
+  seenWizards:
+    bedlevelvisualizer: null
+    corewizard: 3
+    cura: null
+    telegram: 1
+    tracking: null
+system:
+  actions:
+  - action: led_top_off
+    command: gpio -g pwm 19 0
+    name: Led Top Off
+  - action: led_top_on
+    command: gpio -g mode 19 pwm; gpio -g pwm 19 1023
+    name: Led Top On
+  - action: webcam_on
+    command: sudo service webcamd restart
+    name: Webcam On
+  - action: webcam_off
+    command: sudo service webcamd stop
+    name: Webcam Off
+temperature:
+  cutoff: 10
+  profiles:
+  - bed: 100
+    extruder: 230
+    name: ABS
+  - bed: 60
+    extruder: 215
+    name: PLA
+webcam:
+  ffmpeg: /usr/bin/avconv
+  snapshot: http://127.0.0.1:8080/?action=snapshot
+  stream: /webcam/?action=stream
+  streamRatio: '4:3'
